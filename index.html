@@ -1,29 +1,538 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>this website is under devlopment</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+  <title>Daily Tasks — Firebase (Mobile Ready, Animated)</title>
+  <style>
+    :root{
+      --bg1:#061226; --bg2:#071428; --card:#071427;
+      --muted:#9aa4b2; --accent:#06b6d4; --accent-2:#08a0c2; --ok:#10b981; --danger:#ef4444;
+      --glass: rgba(255,255,255,0.03);
+      --radius:14px;
+      --shadow: 0 12px 40px rgba(2,6,23,0.6);
+      --tap: 44px;
+      --max:980px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter,system-ui,Segoe UI,Roboto,Arial;
+      background: linear-gradient(180deg,var(--bg1),var(--bg2));
+      color: #e6eef6;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      padding:18px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      gap:12px;
+    }
+
+    .app{width:100%;max-width:var(--max)}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+    .brand{display:flex;gap:12px;align-items:center}
+    .brand svg{flex:0 0 44px;height:44px;width:44px;padding:6px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow:0 6px 18px rgba(2,6,23,0.5)}
+    h1{margin:0;font-size:18px;letter-spacing:-0.2px}
+    .small{font-size:13px;color:var(--muted)}
+
+    /* layout */
+    .grid{display:grid;grid-template-columns:1fr 340px;gap:14px}
+    @media(max-width:820px){ .grid{grid-template-columns:1fr} }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:var(--radius);
+      padding:14px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    /* auth */
+    .auth{display:flex;flex-direction:column;gap:8px;min-width:240px}
+    .auth input{padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+    .auth .row{display:flex;gap:8px}
+    .auth button{padding:10px 12px;border-radius:10px;border:none;background:var(--accent);color:#022;cursor:pointer}
+
+    /* form */
+    form{display:flex;flex-direction:column;gap:10px}
+    input[type="text"], input[type="date"], input[type="email"], input[type="password"]{
+      padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit;font-size:15px;
+    }
+    .controls{display:flex;gap:8px;align-items:center}
+    .controls button{padding:12px 14px;border-radius:10px;border:none;background:var(--accent);color:#022;font-weight:700;cursor:pointer}
+    .controls .ghost{background:transparent;border:1px solid rgba(255,255,255,0.04)}
+    .muted{color:var(--muted)}
+
+    /* table / list */
+    .list{margin-top:8px}
+    table{width:100%;border-collapse:separate;border-spacing:0 8px}
+    thead th{font-size:13px;color:var(--muted);text-align:left;padding:6px 12px}
+    td{padding:12px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));border-radius:10px}
+    tbody tr{transition:transform .36s cubic-bezier(.2,.9,.3,1),opacity .28s ease;transform-origin:left center}
+    .row-enter{transform:translateY(10px);opacity:0}
+    .row-enter-active{transform:translateY(0);opacity:1}
+    .row-exit{transform:translateX(0);opacity:1}
+    .row-exit-active{transform:translateX(-18px);opacity:0}
+
+    .task-title{font-weight:700;margin-bottom:4px}
+    .task-notes{font-size:13px;color:var(--muted)}
+    .days-left{font-weight:700}
+    .days-left.due{color:var(--danger);animation: pulse 1.4s infinite}
+    .days-left.soon{color: #ffd166; animation: pulse 1.6s infinite}
+    @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.03)}100%{transform:scale(1)}}
+
+    /* action buttons */
+    .actions{display:flex;gap:8px;align-items:center;justify-content:center}
+    .btn{min-width:44px;height:44px;border-radius:10px;border:none;display:inline-flex;align-items:center;justify-content:center;font-weight:700;cursor:pointer;background:var(--glass)}
+    .btn.big{padding:12px 14px;border-radius:12px}
+    .btn.complete{background:linear-gradient(90deg,var(--ok),#0da36b);color:#022}
+    .btn.delete{background:linear-gradient(90deg,var(--danger),#d44a4a);color:#fff}
+    .btn.edit{background:transparent;border:1px solid rgba(255,255,255,0.04)}
+
+    /* animated check */
+    .check {
+      display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));border:1px solid rgba(255,255,255,0.03);font-weight:800;
+      transition:transform .22s cubic-bezier(.2,.9,.3,1), background .22s;
+    }
+    .check:active{transform:scale(.96)}
+    .checked{background:linear-gradient(90deg,var(--ok),#0da36b);color:#022;transform:scale(1.03);box-shadow:0 8px 26px rgba(16,185,129,0.12)}
+
+    /* modal */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.6);display:flex;align-items:center;justify-content:center;z-index:60;opacity:0;pointer-events:none;transition:opacity .18s ease}
+    .modal-backdrop.show{opacity:1;pointer-events:auto}
+    .modal{
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:12px;padding:16px;max-width:420px;width:94%;box-shadow:0 18px 60px rgba(2,6,23,0.7);
+    }
+    .modal h3{margin:0 0 8px 0}
+    .modal p{margin:0 0 12px 0;color:var(--muted)}
+    .modal .row{display:flex;gap:8px;justify-content:flex-end}
+    .modal button{padding:10px 12px;border-radius:10px;border:none;cursor:pointer}
+    .modal .danger{background:linear-gradient(90deg,var(--danger),#d44a4a);color:white}
+    .modal .cancel{background:transparent;border:1px solid rgba(255,255,255,0.04)}
+
+    /* accessibility / mobile niceties */
+    button, .btn{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+    .large-touch{min-height:var(--tap);min-width:var(--tap);display:inline-flex;align-items:center;justify-content:center}
+    @media(max-width:520px){
+      thead{display:none}
+      table,tbody,tr,td{display:block;width:100%}
+      td{margin-bottom:10px;padding:12px}
+      .actions{justify-content:flex-end}
+      .brand h1{font-size:16px}
+      .controls{flex-direction:column}
+      .controls button{width:100%}
+    }
+  </style>
 </head>
-<style>
-  body {
-    background-color: lightblue;
-    text-align: center;
-    font-family: Arial, sans-serif;
-    margin-top: 50px;
-  }
-  h1 {
-    color: darkblue;
-  }
-  button {
-    padding: 10px 20px;
-    font-size: 16px;
-    cursor: pointer;
-  }
-  
-</style>
 <body>
-  <h1>hey user thanks for vist this website will lanuch soon be patant </h1>
-  <button>thanks for vist </button>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <svg viewBox="0 0 24 24" fill="none" width="44" height="44" aria-hidden>
+          <path d="M9 12h6M12 5v14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div>
+          <h1>Daily Tasks — Animated</h1>
+          <div id="motivation" class="small">Loading...</div>
+        </div>
+      </div>
+
+      <div id="authArea" class="card auth small" aria-live="polite">
+        <!-- Auth UI injected -->
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="card" aria-label="Task manager">
+        <form id="taskForm" autocomplete="off" aria-label="Add task form">
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="title" type="text" placeholder="Task title (required)" required aria-label="Task title"/>
+            <input id="endDate" type="date" aria-label="End date"/>
+          </div>
+          <div class="controls">
+            <input id="notes" type="text" placeholder="Short notes (optional)" aria-label="Notes"/>
+            <button id="addBtn" type="submit" class="btn big">Add Task</button>
+          </div>
+          <div class="small muted">Tasks reset daily — mark done again each day. Set an end date to see days left.</div>
+        </form>
+
+        <div class="list" style="margin-top:12px">
+          <table aria-live="polite" id="tasksTable">
+            <thead>
+              <tr>
+                <th>Task</th><th>End</th><th>Days</th><th>Status</th><th style="text-align:center">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tasksBody">
+              <tr><td colspan="5" class="muted">Sign in to see tasks.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <aside class="card" aria-label="Summary">
+        <h3 style="margin:0 0 8px 0">Summary</h3>
+        <div id="summary" class="small muted">Sign in to see your tasks.</div>
+
+        <hr style="margin:12px 0;border:none;border-top:1px solid rgba(255,255,255,0.03)">
+
+        <h4 style="margin:0 0 8px 0">Today</h4>
+        <div id="todayList" class="small muted">—</div>
+
+        <div style="margin-top:12px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button id="clearCompleted" class="btn ghost">Clear Completed</button>
+            <button id="deleteAll" class="btn ghost" style="border:1px solid rgba(255,255,255,0.04);color:var(--danger)">Delete All</button>
+          </div>
+        </div>
+      </aside>
+
+      <section class="card" style="margin-top:12px">
+        <h3 style="margin:0 0 8px 0">Activity</h3>
+        <div id="log" class="small muted">Waiting...</div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal -->
+  <div id="modalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal" role="document" aria-labelledby="modalTitle">
+      <h3 id="modalTitle">Confirm</h3>
+      <p id="modalMessage">Are you sure?</p>
+      <div class="row">
+        <button id="modalCancel" class="cancel">Cancel</button>
+        <button id="modalConfirm" class="danger">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase & App logic -->
+  <script type="module">
+    // Firebase imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+    import { getFirestore, collection, doc, addDoc, onSnapshot, query, orderBy, updateDoc, deleteDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+
+    // YOUR FIREBASE CONFIG (same as you provided)
+    const firebaseConfig = {
+      apiKey: "AIzaSyD7CbGgq25umkTqZ45rAFC4u6bk-rvpK1A",
+      authDomain: "tasks-21297.firebaseapp.com",
+      databaseURL: "https://tasks-21297-default-rtdb.firebaseio.com",
+      projectId: "tasks-21297",
+      storageBucket: "tasks-21297.firebasestorage.app",
+      messagingSenderId: "60031752605",
+      appId: "1:60031752605:web:b0965956fef8084ea4b774",
+      measurementId: "G-PJJTHSJMHD"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    try { getAnalytics(app); } catch(e){ /* ignore analytics error on file:// */ }
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Helpers
+    const uidToday = () => {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,'0');
+      const dd = String(d.getDate()).padStart(2,'0');
+      return `${y}-${m}-${dd}`;
+    };
+    const daysLeft = (endDateStr) => {
+      if(!endDateStr) return '—';
+      const today = new Date(uidToday() + 'T00:00:00');
+      const end = new Date(endDateStr + 'T00:00:00');
+      const diff = Math.ceil((end - today) / (1000*60*60*24));
+      if(diff < 0) return 'Expired';
+      if(diff === 0) return 'Due today';
+      return `${diff} day${diff>1?'s':''}`;
+    };
+    const log = (s) => { document.getElementById('log').textContent = s; };
+
+    // UI elements
+    const authArea = document.getElementById('authArea');
+    const taskForm = document.getElementById('taskForm');
+    const titleInput = document.getElementById('title');
+    const endInput = document.getElementById('endDate');
+    const notesInput = document.getElementById('notes');
+    const tasksBody = document.getElementById('tasksBody');
+    const summary = document.getElementById('summary');
+    const todayList = document.getElementById('todayList');
+    const motivationEl = document.getElementById('motivation');
+    const clearCompletedBtn = document.getElementById('clearCompleted');
+    const deleteAllBtn = document.getElementById('deleteAll');
+
+    // Modal
+    const modalBackdrop = document.getElementById('modalBackdrop');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalMessage = document.getElementById('modalMessage');
+    const modalConfirm = document.getElementById('modalConfirm');
+    const modalCancel = document.getElementById('modalCancel');
+
+    let modalResolve = null;
+    function showModal(title, message, confirmText='Confirm', cancelText='Cancel'){
+      modalTitle.textContent = title;
+      modalMessage.textContent = message;
+      modalConfirm.textContent = confirmText;
+      modalCancel.textContent = cancelText;
+      modalBackdrop.classList.add('show');
+      modalBackdrop.setAttribute('aria-hidden','false');
+      modalConfirm.focus();
+      return new Promise((resolve)=>{
+        modalResolve = resolve;
+      });
+    }
+    function hideModal(result=false){
+      modalBackdrop.classList.remove('show');
+      modalBackdrop.setAttribute('aria-hidden','true');
+      if(modalResolve) modalResolve(result);
+      modalResolve = null;
+    }
+    modalConfirm.addEventListener('click', ()=> hideModal(true));
+    modalCancel.addEventListener('click', ()=> hideModal(false));
+    modalBackdrop.addEventListener('click', (e)=> { if(e.target === modalBackdrop) hideModal(false); });
+    window.addEventListener('keydown', (e)=> { if(e.key === 'Escape' && modalResolve) hideModal(false); });
+
+    // Motivation line
+    (function setMotivation(){
+      const hr = new Date().getHours();
+      let line = "Let's get it done.";
+      if(hr < 6) line = "Early bird — make it count.";
+      else if(hr < 12) line = "Good morning — one step at a time.";
+      else if(hr < 17) line = "Afternoon grind — push through.";
+      else if(hr < 21) line = "Evening focus — finish strong.";
+      else line = "Late night — small wins matter.";
+      motivationEl.textContent = line;
+    })();
+
+    // Auth UI
+    function renderAuthUI(user){
+      if(user){
+        authArea.innerHTML = `
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+            <div class="small">Signed in as <strong>${user.email}</strong></div>
+            <div style="display:flex;gap:8px">
+              <button id="logoutBtn" class="small">Logout</button>
+            </div>
+          </div>`;
+        document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
+        return;
+      }
+
+      authArea.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:6px;min-width:260px">
+          <input id="authEmail" type="email" placeholder="Email" aria-label="Email" />
+          <input id="authPass" type="password" placeholder="Password" aria-label="Password" />
+          <div style="display:flex;gap:8px">
+            <button id="signupBtn">Sign up</button>
+            <button id="loginBtn" style="background:transparent;border:1px solid rgba(255,255,255,0.04)">Login</button>
+          </div>
+        </div>
+      `;
+      document.getElementById('signupBtn').addEventListener('click', async ()=>{
+        const email = document.getElementById('authEmail').value.trim();
+        const pass = document.getElementById('authPass').value;
+        if(!email || !pass){ alert('Enter email & password'); return; }
+        try{ await createUserWithEmailAndPassword(auth,email,pass); } catch(err){ alert('Signup error: '+err.message); }
+      });
+      document.getElementById('loginBtn').addEventListener('click', async ()=>{
+        const email = document.getElementById('authEmail').value.trim();
+        const pass = document.getElementById('authPass').value;
+        if(!email || !pass){ alert('Enter email & password'); return; }
+        try{ await signInWithEmailAndPassword(auth,email,pass); } catch(err){ alert('Login error: '+err.message); }
+      });
+    }
+
+    // Firestore
+    let unsubscribeTasks = null;
+    let currentUid = null;
+    function userTasksCollectionRef(uid){
+      return collection(db, 'users', uid, 'tasks');
+    }
+    function attachTaskListener(uid){
+      if(unsubscribeTasks) unsubscribeTasks();
+      currentUid = uid;
+      const q = query(userTasksCollectionRef(uid), orderBy('createdAt','desc'));
+      unsubscribeTasks = onSnapshot(q, snapshot => {
+        const docs = [];
+        snapshot.forEach(d=> docs.push({ id: d.id, ...d.data() }));
+        renderTasks(docs);
+        log(`Loaded ${docs.length} tasks (real-time).`);
+      }, err => log('Tasks listener error: '+err.message));
+    }
+    async function addTaskToFirestore(data){
+      if(!currentUid) { alert('Not signed in'); return; }
+      await addDoc(userTasksCollectionRef(currentUid), {
+        title: data.title,
+        notes: data.notes || '',
+        endDate: data.endDate || '',
+        createdAt: serverTimestamp(),
+        lastCompletedDate: ''
+      });
+    }
+    async function toggleComplete(task){
+      if(!currentUid) return;
+      // show modal confirmation
+      const today = uidToday();
+      const willMark = task.lastCompletedDate !== today;
+      const confirmed = await showModal(willMark ? 'Mark Complete' : 'Unmark Complete',
+        willMark ? `Are you sure you want to mark "${task.title}" as complete for today?` :
+                   `Are you sure you want to mark "${task.title}" as incomplete?`,
+        willMark ? 'Yes, complete' : 'Yes, uncomplete',
+        'Cancel');
+      if(!confirmed) return;
+      const tdoc = doc(db, 'users', currentUid, 'tasks', task.id);
+      const newVal = willMark ? today : '';
+      await updateDoc(tdoc, { lastCompletedDate: newVal });
+    }
+    async function updateTask(taskId, updates){
+      if(!currentUid) return;
+      const tdoc = doc(db, 'users', currentUid, 'tasks', taskId);
+      await updateDoc(tdoc, updates);
+    }
+    async function deleteTask(task){
+      if(!currentUid) return;
+      const confirmed = await showModal('Delete Task', `Are you sure you want to delete "${task.title}" permanently?`, 'Delete', 'Cancel');
+      if(!confirmed) return;
+      await deleteDoc(doc(db, 'users', currentUid, 'tasks', task.id));
+    }
+    async function clearCompletedAll(){
+      if(!currentUid) return;
+      const confirmed = await showModal('Clear Completed', 'Clear all tasks completed today (they will become incomplete)?', 'Clear', 'Cancel');
+      if(!confirmed) return;
+      const qsnap = await getDocs(query(userTasksCollectionRef(currentUid)));
+      const today = uidToday();
+      for(const d of qsnap.docs){
+        const data = d.data();
+        if(data.lastCompletedDate === today){
+          await updateDoc(doc(db, 'users', currentUid, 'tasks', d.id), { lastCompletedDate: '' });
+        }
+      }
+    }
+    async function deleteAllTasks(){
+      if(!currentUid) return;
+      const confirmed = await showModal('Delete ALL', 'Delete ALL tasks permanently? This cannot be undone.', 'Delete All', 'Cancel');
+      if(!confirmed) return;
+      const qsnap = await getDocs(query(userTasksCollectionRef(currentUid)));
+      for(const d of qsnap.docs){
+        await deleteDoc(doc(db, 'users', currentUid, 'tasks', d.id));
+      }
+    }
+
+    // render tasks with animations
+    function renderTasks(tasks){
+      // clear
+      tasksBody.innerHTML = '';
+      if(tasks.length === 0){
+        tasksBody.innerHTML = '<tr><td colspan="5" class="muted">No tasks — add one.</td></tr>';
+        summary.textContent = 'No tasks yet.';
+        todayList.textContent = '—';
+        return;
+      }
+
+      let total = 0, doneToday = 0, activeCount = 0;
+      const today = uidToday();
+
+      tasks.forEach(t => {
+        total++;
+        const isDone = (t.lastCompletedDate === today);
+        if(isDone) doneToday++; else activeCount++;
+
+        const tr = document.createElement('tr');
+        const days = daysLeft(t.endDate);
+        let daysClass = '';
+        if(days === 'Due today' || days === 'Expired') daysClass = 'due';
+        else if(typeof days === 'string' && days.includes('day') && Number(days.split(' ')[0]) <= 3) daysClass = 'soon';
+
+        tr.classList.add('row-enter');
+        setTimeout(()=> tr.classList.remove('row-enter'), 20);
+
+        tr.innerHTML = `
+          <td>
+            <div class="task-title">${escapeHtml(t.title)}</div>
+            <div class="task-notes">${escapeHtml(t.notes || '')}</div>
+          </td>
+          <td>${t.endDate || '—'}</td>
+          <td><div class="days-left ${daysClass}">${days}</div></td>
+          <td class="${isDone? 'small':'small muted'}" style="font-weight:700">${isDone ? 'Done today' : 'Incomplete'}</td>
+          <td>
+            <div class="actions" role="group" aria-label="Task actions">
+              <button class="btn complete large-touch" data-action="toggle">${isDone ? '⟲' : '✔'}</button>
+              <button class="btn edit large-touch" data-action="edit">✏️</button>
+              <button class="btn delete large-touch" data-action="delete">🗑</button>
+            </div>
+          </td>
+        `;
+
+        // bind actions
+        tr.querySelector('[data-action="toggle"]').addEventListener('click', ()=> toggleComplete(t));
+        tr.querySelector('[data-action="edit"]').addEventListener('click', async ()=>{
+          const newTitle = prompt('Edit title', t.title);
+          if(newTitle === null) return;
+          const newEnd = prompt('Edit end date (YYYY-MM-DD) or blank', t.endDate || '');
+          await updateTask(t.id, { title: newTitle, endDate: newEnd || '' });
+        });
+        tr.querySelector('[data-action="delete"]').addEventListener('click', ()=> deleteTask(t));
+
+        tasksBody.appendChild(tr);
+      });
+
+      summary.textContent = `${doneToday} done today • ${activeCount} incomplete • ${total} total`;
+      const todayTasks = tasks.filter(t => (t.lastCompletedDate === today));
+      todayList.textContent = todayTasks.length ? todayTasks.slice(0,5).map(x=>x.title).join(', ') : 'No tasks completed yet today.';
+    }
+
+    function escapeHtml(s){
+      if(!s) return '';
+      return s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+    }
+
+    // Events
+    taskForm.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      if(!auth.currentUser){ alert('Sign in first'); return; }
+      const title = titleInput.value.trim();
+      const endDate = endInput.value || '';
+      const notes = notesInput.value.trim() || '';
+      if(!title){ alert('Task title required'); return; }
+      try{
+        await addTaskToFirestore({ title, endDate, notes });
+        titleInput.value = ''; endInput.value = ''; notesInput.value = '';
+      }catch(err){ alert('Add task error: '+err.message); }
+    });
+
+    clearCompletedBtn.addEventListener('click', async ()=> {
+      if(!auth.currentUser) return alert('Sign in');
+      await clearCompletedAll();
+    });
+    deleteAllBtn.addEventListener('click', async ()=> {
+      if(!auth.currentUser) return alert('Sign in');
+      await deleteAllTasks();
+    });
+
+    // Auth state
+    onAuthStateChanged(auth, user => {
+      renderAuthUI(user);
+      if(user){
+        attachTaskListener(user.uid);
+      } else {
+        if(unsubscribeTasks) { unsubscribeTasks(); unsubscribeTasks = null; currentUid = null; }
+        tasksBody.innerHTML = '<tr><td colspan="5" class="muted">Sign in to load tasks.</td></tr>';
+        summary.textContent = 'Not signed in.';
+        todayList.textContent = '—';
+        log('Signed out.');
+      }
+    });
+
+    // quick helper to focus input with '/'
+    window.addEventListener('keydown', e => { if(e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA'){ e.preventDefault(); titleInput.focus(); } });
+
+    console.log('Animated Firebase Todo loaded (mobile-ready).');
+
+  </script>
 </body>
 </html>
